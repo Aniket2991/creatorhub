@@ -1,11 +1,11 @@
 export async function POST(request: Request) {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env.NARA_API_KEY;
 
     if (!apiKey) {
       return Response.json(
         {
-          error: "OpenAI API key is not configured."
+          error: "NaraRouter API key is not configured."
         },
         { status: 500 }
       );
@@ -48,7 +48,7 @@ ACTION:
 ${action}
 
 CAMERA:
-${camera || "Use the most suitable cinematic camera movement and angle."}
+${camera || "Choose the most suitable cinematic camera movement and angle."}
 
 LIGHTING:
 ${lighting || "Choose lighting that naturally fits the scene."}
@@ -66,16 +66,17 @@ AUDIO:
 ${audio || "Create suitable realistic audio for the scene."}
 
 ADDITIONAL:
-${additional || "Use your own professional judgment."}
+${additional || "Use professional judgment."}
 `;
 
     const systemPrompt = `
 You are an expert cinematic AI video prompt engineer.
 
-Your job is to transform simple user inputs into an extremely detailed,
+Transform simple user inputs into an extremely detailed,
 production-quality prompt for modern AI video generators.
 
-IMPORTANT:
+IMPORTANT RULES:
+
 - Do NOT simply repeat the user's inputs.
 - Expand them intelligently.
 - Infer missing details from the subject and environment.
@@ -84,45 +85,50 @@ IMPORTANT:
 - Keep the subject consistent throughout the video.
 - Avoid generic filler.
 - Make camera movement specific.
+- Make camera angle specific.
 - Make lighting specific.
 - Include realistic environmental details.
-- Include appropriate audio when useful.
+- Include appropriate audio.
 - Adapt the prompt to the subject.
+- Never write "not specified".
+- Never invent irrelevant details.
+- Keep the user's requested duration and aspect ratio.
 
-For example:
+CONTEXT-AWARE BEHAVIOR:
 
 If the subject is a sports car:
-- Use automotive-commercial camera language.
+- Use premium automotive-commercial cinematography.
 - Include realistic wheel rotation.
-- Include reflections on the vehicle.
 - Include believable acceleration and road interaction.
+- Include reflections on the vehicle.
 - Consider low-angle tracking shots.
 - Include engine, tire and environmental audio.
 
 If the subject is a person:
 - Include natural body movement.
-- Include realistic facial expression and clothing motion.
-- Avoid distorted hands, limbs or facial features.
+- Include realistic facial expression.
+- Include realistic clothing and hair motion.
+- Maintain consistent anatomy and appearance.
 
 If the subject is a product:
 - Treat it like a premium commercial.
+- Emphasize materials, details, textures and reflections.
 - Use controlled camera movement.
-- Emphasize product materials, details and reflections.
 
 If the subject is food:
-- Emphasize texture, steam, ingredients and appetizing macro shots.
+- Emphasize texture, steam, ingredients and appetizing macro cinematography.
 
 If the subject is a landscape:
-- Emphasize atmosphere, environmental motion, depth and natural lighting.
+- Emphasize atmosphere, environmental movement, depth and natural lighting.
 
 If the subject is a character:
-- Maintain consistent appearance, clothing and proportions.
+- Maintain consistent face, body proportions, clothing and appearance.
 
-OUTPUT FORMAT:
+OUTPUT:
 
-Start with one polished master prompt.
+Start with one polished MASTER PROMPT.
 
-Then organize supporting instructions under:
+Then organize supporting details under:
 
 ENVIRONMENT
 ACTION
@@ -134,17 +140,14 @@ AUDIO
 TECHNICAL DETAILS
 ADDITIONAL
 
-Do not include explanations about how you generated the prompt.
+The output must be directly copyable into an AI video generator.
 
-Do not use markdown tables.
-
-Do not say "not specified".
-
-The final result should be ready to copy directly into an AI video generator.
+Do not explain your reasoning.
+Do not include a table.
 `;
 
     const response = await fetch(
-      "https://api.openai.com/v1/responses",
+      "https://router.bynara.id/v1/chat/completions",
       {
         method: "POST",
         headers: {
@@ -152,10 +155,19 @@ The final result should be ready to copy directly into an AI video generator.
           Authorization: `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: "gpt-5.6-luna",
-          instructions: systemPrompt,
-          input: userInput,
-          max_output_tokens: 3000
+          model: "auto/bynara",
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt
+            },
+            {
+              role: "user",
+              content: userInput
+            }
+          ],
+          temperature: 0.8,
+          max_tokens: 3000
         })
       }
     );
@@ -163,26 +175,20 @@ The final result should be ready to copy directly into an AI video generator.
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("OpenAI API error:", data);
+      console.error("NaraRouter API error:", data);
 
       return Response.json(
         {
           error:
             data?.error?.message ||
-            "OpenAI API request failed."
+            "NaraRouter API request failed."
         },
         { status: response.status }
       );
     }
 
     const generatedText =
-      data.output_text ||
-      data.output
-        ?.flatMap((item: any) => item.content || [])
-        ?.filter((item: any) => item.type === "output_text")
-        ?.map((item: any) => item.text)
-        ?.join("\n") ||
-      "";
+      data?.choices?.[0]?.message?.content || "";
 
     if (!generatedText) {
       return Response.json(
@@ -197,6 +203,7 @@ The final result should be ready to copy directly into an AI video generator.
       success: true,
       prompt: generatedText
     });
+
   } catch (error) {
     console.error("Generation error:", error);
 

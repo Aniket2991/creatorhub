@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { Video, Image as ImageIcon, Instagram, Zap, Play, ImagePlus, Captions, Hash, Youtube, UserRound, Lightbulb } from "lucide-react";
+import { Video, Image as ImageIcon, InstagramIcon, Zap, ImagePlus, Captions, Hash, YoutubeIcon, UserRound, Lightbulb } from "lucide-react";
 import { SectionTitle, ToolCard } from "@/components/ui";
 import { tools } from "@/lib/tool-data";
 
 export default function Home() {
   const popular = [tools[0],tools[1],tools[2],tools[4]];
-  const icons = { "video-prompt":Video, "image-prompt":ImageIcon, caption:Instagram, hashtags:Hash, hooks:Zap, "youtube-title":Youtube, "instagram-bio":UserRound, "content-ideas":Lightbulb };
+  const icons = { "video-prompt":Video, "image-prompt":ImageIcon, caption:InstagramIcon, hashtags:Hash, hooks:Zap, "youtube-title":YoutubeIcon, "instagram-bio":UserRound, "content-ideas":Lightbulb };
   return <main className="page-shell">
     <section className="hero"><div className="container hero-grid"><div><span className="eyebrow">CREATOR TOOLS, WITHOUT THE FRICTION</span><h1>Create Better Content <span className="gradient-text">With AI</span></h1><p>Free AI tools, prompts and resources for creators, businesses and social media marketers.</p><div className="hero-actions"><Link href="/tools/video-prompt" className="button button-primary">Explore Free Tools</Link><Link href="/ai-tools" className="button button-secondary">Browse AI Tools</Link></div><p className="hero-note">Free to use • No credit card • Built for creators</p></div><div className="flow-card"><div className="flow-head"><span className="eyebrow">CREATOR WORKFLOW</span><span>Simple by design</span></div><div className="flow"><div className="flow-step"><span>01</span><strong>IDEA</strong><span>→</span></div><div className="flow-step"><span>02</span><strong>TOOL</strong><span>→</span></div><div className="flow-step"><span>03</span><strong>CONTENT</strong><span>→</span></div><div className="flow-step"><span>04</span><strong>PUBLISH</strong><span>✓</span></div></div></div></div></section>
     <section className="section"><div className="container"><SectionTitle eyebrow="POPULAR TOOLS" title="Useful tools you can run right now" description="Every MVP tool works with structured templates and browser-side logic. No paid AI API is required."/><div className="grid-4">{popular.map(t=><ToolCard key={t.slug} tool={t} icon={icons[t.slug]}/>)}</div><div style={{marginTop:20}}><Link href="/tools/video-prompt" className="text-link">View All Tools →</Link></div></div></section>

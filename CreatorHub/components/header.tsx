@@ -10,7 +10,8 @@ const nav = [
   ["Tools", "/tools"],
   ["AI Directory", "/ai-tools"],
   ["Prompts", "/prompts"],
-  ["Resources", "/resources"]
+  ["Resources", "/resources"],
+  ["Studio", "/studio"]
 ];
 
 export function Header() {

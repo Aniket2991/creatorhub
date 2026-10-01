@@ -1,20 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Copy, Sparkles } from "lucide-react";
 
 const goals = ["Grow audience", "Launch a product", "Get leads", "Build authority"];
 const platforms = ["Instagram", "YouTube", "TikTok", "LinkedIn"];
+
+type Brand = {
+  name: string;
+  niche: string;
+  audience: string;
+  tone: string;
+  offer: string;
+  cta: string;
+  colors: string;
+};
+
+const blankBrand: Brand = { name: "", niche: "", audience: "", tone: "", offer: "", cta: "", colors: "" };
 
 export function CampaignStudio() {
   const [brief, setBrief] = useState("");
   const [platform, setPlatform] = useState("Instagram");
   const [goal, setGoal] = useState("Grow audience");
   const [audience, setAudience] = useState("");
+  const [brand, setBrand] = useState<Brand>(blankBrand);
+  const [useBrand, setUseBrand] = useState(true);
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("creatorhub-brand");
+      if (raw) setBrand({ ...blankBrand, ...JSON.parse(raw) });
+    } catch {}
+  }, []);
+
+  const hasBrand = Object.values(brand).some(Boolean);
 
   async function generate() {
     if (!brief.trim()) {
@@ -30,7 +53,14 @@ export function CampaignStudio() {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "campaign", brief, platform, goal, audience }),
+        body: JSON.stringify({
+          mode: "campaign",
+          brief,
+          platform,
+          goal,
+          audience,
+          brand: useBrand ? brand : null,
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Campaign generation failed.");
@@ -88,6 +118,16 @@ export function CampaignStudio() {
                 <span>Audience</span>
                 <input value={audience} onChange={(e) => setAudience(e.target.value)} placeholder="e.g. Indian small business owners" />
               </label>
+            </div>
+
+            <div className="studio-brand-toggle">
+              <label className="studio-check">
+                <input type="checkbox" checked={useBrand} onChange={(e) => setUseBrand(e.target.checked)} />
+                <span>Use my Brand Profile</span>
+              </label>
+              <span className={hasBrand ? "studio-brand-status studio-brand-ready" : "studio-brand-status"}>
+                {hasBrand ? "Brand context ready" : "No brand profile saved"}
+              </span>
             </div>
 
             {error && <div className="form-error">{error}</div>}

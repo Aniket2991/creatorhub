@@ -13,10 +13,26 @@ export async function POST(request: Request) {
       const platform = String(body.platform || "Instagram");
       const goal = String(body.goal || "Grow audience");
       const audience = String(body.audience || "Content creators and small businesses");
+      const brand = body.brand && typeof body.brand === "object" ? body.brand : null;
 
       if (!brief) {
         return Response.json({ error: "Describe what you want to create." }, { status: 400 });
       }
+
+      const brandContext = brand
+        ? `
+BRAND PROFILE:
+Brand / creator name: ${String(brand.name || "Not provided")}
+Niche: ${String(brand.niche || "Not provided")}
+Target audience: ${String(brand.audience || "Not provided")}
+Brand voice: ${String(brand.tone || "Not provided")}
+Product / service: ${String(brand.offer || "Not provided")}
+Default CTA: ${String(brand.cta || "Not provided")}
+Brand colours: ${String(brand.colors || "Not provided")}
+
+Use this brand context consistently. If a field is blank, infer a sensible choice from the brief rather than mentioning the missing field.
+`
+        : "No saved brand profile was supplied. Infer brand details from the brief.";
 
       const campaignPrompt = `You are CreatorHub Studio, an expert AI content strategist for creators and small businesses.
 
@@ -34,7 +50,9 @@ ${goal}
 AUDIENCE:
 ${audience}
 
-Create a useful campaign pack. Do not claim guaranteed virality. Keep ideas specific to the brief.
+${brandContext}
+
+Create a useful campaign pack. Make the campaign feel like it belongs to the brand, not like a generic template. Do not claim guaranteed virality. Keep ideas specific to the brief.
 
 OUTPUT EXACTLY:
 

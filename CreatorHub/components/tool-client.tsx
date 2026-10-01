@@ -23,7 +23,7 @@ export function ToolClient({ tool }: { tool: ToolDefinition }) {
   const [loading, setLoading] = useState(false);
 
   const isVideoTool =
-    tool.slug === "video-prompt-generator";
+    tool.slug === "video-prompt";
 
   async function generate() {
     const missing = tool.fields.find(

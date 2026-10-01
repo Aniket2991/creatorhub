@@ -4,9 +4,7 @@ export async function POST(request: Request) {
 
     if (!apiKey) {
       return Response.json(
-        {
-          error: "NaraRouter API key is not configured."
-        },
+        { error: "NaraRouter API key is not configured." },
         { status: 500 }
       );
     }
@@ -17,133 +15,192 @@ export async function POST(request: Request) {
       subject,
       environment,
       action,
-      camera,
+      cameraMovement,
+      cameraAngle,
       lighting,
-      style,
+      visualStyle,
       duration,
       aspectRatio,
       audio,
-      additional
+      additional,
     } = body;
 
-    if (!subject || !environment || !action) {
+    if (!subject || !action) {
       return Response.json(
-        {
-          error: "Subject, environment and action are required."
-        },
+        { error: "Subject and action are required." },
         { status: 400 }
       );
     }
 
     const userInput = `
-Create a professional AI video-generation prompt using these details:
+USER INPUTS
 
 SUBJECT:
 ${subject}
 
 ENVIRONMENT:
-${environment}
+${environment || "Infer a realistic environment that fits the subject and action."}
 
 ACTION:
 ${action}
 
-CAMERA:
-${camera || "Choose the most suitable cinematic camera movement and angle."}
+CAMERA MOVEMENT:
+${cameraMovement || "Choose a cinematic camera movement that best serves the action."}
+
+CAMERA ANGLE:
+${cameraAngle || "Choose a cinematic angle that best presents the subject."}
 
 LIGHTING:
-${lighting || "Choose lighting that naturally fits the scene."}
+${lighting || "Choose lighting that naturally fits the environment and subject."}
 
 VISUAL STYLE:
-${style || "Choose a professional visual style that fits the subject and scene."}
+${visualStyle || "Choose a polished professional visual style appropriate to the subject."}
 
 DURATION:
-${duration || "Use an appropriate duration."}
+${duration || "Choose an appropriate duration."}
 
 ASPECT RATIO:
-${aspectRatio || "16:9"}
+${aspectRatio || "16:9 landscape"}
 
 AUDIO:
-${audio || "Create suitable realistic audio for the scene."}
+${audio || "Create realistic audio appropriate to the scene."}
 
 ADDITIONAL:
-${additional || "Use professional judgment."}
+${additional || "No extra constraints. Use professional creative judgment."}
 `;
 
     const systemPrompt = `
-You are an expert cinematic AI video prompt engineer.
+You are CreatorHub's professional AI Video Prompt Engineer.
 
-Transform simple user inputs into an extremely detailed,
-production-quality prompt for modern AI video generators.
+Transform the user's simple inputs into a detailed, production-ready
+prompt for modern AI video generators.
 
-IMPORTANT RULES:
+The user may provide only a few words. Expand them intelligently.
+Do not merely repeat the input.
 
-- Do NOT simply repeat the user's inputs.
-- Expand them intelligently.
-- Infer missing details from the subject and environment.
-- Make the result visually coherent.
-- Use realistic physical motion.
-- Keep the subject consistent throughout the video.
-- Avoid generic filler.
-- Make camera movement specific.
-- Make camera angle specific.
-- Make lighting specific.
-- Include realistic environmental details.
-- Include appropriate audio.
-- Adapt the prompt to the subject.
-- Never write "not specified".
-- Never invent irrelevant details.
-- Keep the user's requested duration and aspect ratio.
+QUALITY RULES:
 
-CONTEXT-AWARE BEHAVIOR:
+- Never write "Not specified", "Not provided", "N/A", or similar placeholders.
+- Never leave a requested section empty.
+- Infer sensible details from the subject, environment and action.
+- Do not invent irrelevant objects, people or events.
+- Respect the user's duration and aspect ratio.
+- Keep the main subject consistent throughout the shot.
+- Describe realistic physics and continuous motion.
+- Make the result directly copyable into an AI video generator.
+- Do not explain your reasoning.
+- Do not use a table.
 
-If the subject is a sports car:
-- Use premium automotive-commercial cinematography.
-- Include realistic wheel rotation.
-- Include believable acceleration and road interaction.
-- Include reflections on the vehicle.
-- Consider low-angle tracking shots.
-- Include engine, tire and environmental audio.
+CAMERA:
+Turn camera inputs into a complete cinematic setup.
+Specify shot type, camera position, angle, movement, framing, subject
+tracking, lens/focal length when useful, depth of field and focus behavior.
+If the user gives only "tracking shot", expand it into a specific tracking
+shot instead of repeating those two words.
 
-If the subject is a person:
-- Include natural body movement.
-- Include realistic facial expression.
-- Include realistic clothing and hair motion.
-- Maintain consistent anatomy and appearance.
+LIGHTING:
+Turn simple lighting inputs into a complete lighting design including
+practical sources, key/fill/rim light when relevant, reflections, shadows,
+contrast and exposure.
 
-If the subject is a product:
-- Treat it like a premium commercial.
-- Emphasize materials, details, textures and reflections.
-- Use controlled camera movement.
+ENVIRONMENT:
+Build believable foreground, middle-ground and background depth using only
+details that naturally belong to the location.
 
-If the subject is food:
-- Emphasize texture, steam, ingredients and appetizing macro cinematography.
+ACTION:
+Describe how the action starts, develops and ends within the requested
+duration, including realistic movement and interaction with the environment.
 
-If the subject is a landscape:
-- Emphasize atmosphere, environmental movement, depth and natural lighting.
+MOTION & ATMOSPHERE:
+Include appropriate environmental movement, camera motion, reflections,
+particles, weather, clothing/hair movement, vehicle motion or other
+physically relevant details. Do not add details that do not fit the scene.
 
-If the subject is a character:
-- Maintain consistent face, body proportions, clothing and appearance.
+AUDIO:
+Always create appropriate audio even when the user leaves the field blank.
+For vehicles, consider engine, tire, road and traffic sounds.
+For people, consider footsteps, clothing and environmental ambience.
+For food, consider cooking and kitchen ambience.
+For nature, consider wind, water, birds and environmental ambience.
+For products, use subtle premium commercial sound design.
+Never say audio is unspecified.
 
-OUTPUT:
+SUBJECT-SPECIFIC CINEMATOGRAPHY:
 
-Start with one polished MASTER PROMPT.
+SPORTS CAR / AUTOMOTIVE:
+Use premium automotive-commercial cinematography. Consider low-angle
+tracking, front three-quarter framing, realistic wheel rotation,
+tire-road interaction, acceleration, suspension movement, reflections,
+bodywork highlights, road spray when appropriate, engine sound and traffic.
 
-Then organize supporting details under:
+PERSON:
+Use natural body movement, realistic facial expression, clothing and hair
+physics, consistent anatomy and identity.
+
+PRODUCT:
+Use premium commercial presentation, material details, controlled lighting,
+reflections and smooth product-focused camera movement.
+
+FOOD:
+Use appetizing macro cinematography, realistic texture, steam and
+appropriate cooking or serving sounds.
+
+LANDSCAPE:
+Use atmospheric depth, natural environmental movement, weather,
+vegetation, water and natural light.
+
+CHARACTER:
+Maintain consistent face, body proportions, clothing, hairstyle and
+accessories throughout the video.
+
+MASTER PROMPT:
+Write one polished paragraph that combines the subject, environment,
+action, camera, lighting, visual style, motion, atmosphere, audio and
+technical quality.
+
+OUTPUT EXACTLY IN THIS STRUCTURE:
+
+MASTER PROMPT
+
+[Detailed production-ready prompt]
 
 ENVIRONMENT
+
+[Detailed environment]
+
 ACTION
+
+[Detailed physical action]
+
 CAMERA
+
+[Detailed cinematic camera setup]
+
 LIGHTING
+
+[Detailed lighting setup]
+
 VISUAL STYLE
+
+[Detailed visual style]
+
 MOTION & ATMOSPHERE
+
+[Detailed motion and atmosphere]
+
 AUDIO
+
+[Detailed audio]
+
 TECHNICAL DETAILS
+
+[Detailed technical requirements]
+
 ADDITIONAL
 
-The output must be directly copyable into an AI video generator.
+[Relevant additional instructions]
 
-Do not explain your reasoning.
-Do not include a table.
+Every section must contain specific, useful information.
 `;
 
     const response = await fetch(
@@ -152,23 +209,17 @@ Do not include a table.
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model: "auto/bynara",
           messages: [
-            {
-              role: "system",
-              content: systemPrompt
-            },
-            {
-              role: "user",
-              content: userInput
-            }
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userInput },
           ],
-          temperature: 0.8,
-          max_tokens: 3000
-        })
+          temperature: 0.85,
+          max_tokens: 4000,
+        }),
       }
     );
 
@@ -176,12 +227,11 @@ Do not include a table.
 
     if (!response.ok) {
       console.error("NaraRouter API error:", data);
-
       return Response.json(
         {
           error:
             data?.error?.message ||
-            "NaraRouter API request failed."
+            "NaraRouter API request failed.",
         },
         { status: response.status }
       );
@@ -192,25 +242,19 @@ Do not include a table.
 
     if (!generatedText) {
       return Response.json(
-        {
-          error: "AI returned an empty response."
-        },
+        { error: "AI returned an empty response." },
         { status: 500 }
       );
     }
 
     return Response.json({
       success: true,
-      prompt: generatedText
+      prompt: generatedText,
     });
-
   } catch (error) {
     console.error("Generation error:", error);
-
     return Response.json(
-      {
-        error: "Something went wrong while generating the prompt."
-      },
+      { error: "Something went wrong while generating the prompt." },
       { status: 500 }
     );
   }

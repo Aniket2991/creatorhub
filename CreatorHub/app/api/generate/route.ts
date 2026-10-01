@@ -3,13 +3,80 @@ export async function POST(request: Request) {
     const apiKey = process.env.NARA_API_KEY;
 
     if (!apiKey) {
-      return Response.json(
-        { error: "NaraRouter API key is not configured." },
-        { status: 500 }
-      );
+      return Response.json({ error: "NaraRouter API key is not configured." }, { status: 500 });
     }
 
     const body = await request.json();
+
+    if (body?.mode === "campaign") {
+      const brief = String(body.brief || "").trim();
+      const platform = String(body.platform || "Instagram");
+      const goal = String(body.goal || "Grow audience");
+      const audience = String(body.audience || "Content creators and small businesses");
+
+      if (!brief) {
+        return Response.json({ error: "Describe what you want to create." }, { status: 400 });
+      }
+
+      const campaignPrompt = `You are CreatorHub Studio, an expert AI content strategist for creators and small businesses.
+
+Turn this brief into a practical multi-channel content campaign.
+
+BRIEF:
+${brief}
+
+PLATFORM:
+${platform}
+
+GOAL:
+${goal}
+
+AUDIENCE:
+${audience}
+
+Create a useful campaign pack. Do not claim guaranteed virality. Keep ideas specific to the brief.
+
+OUTPUT EXACTLY:
+
+CAMPAIGN CONCEPT
+[One clear concept and positioning]
+
+HOOKS
+[5 distinct hooks]
+
+PRIMARY CONTENT
+[One ready-to-use content concept with a short script/copy]
+
+CAPTION
+[One polished caption]
+
+VISUAL PROMPT
+[A detailed image-generation prompt]
+
+VIDEO PROMPT
+[A detailed AI-video prompt]
+
+HASHTAGS
+[12 relevant hashtags]
+
+REPURPOSE IDEAS
+[4 ways to adapt the same idea for other formats/platforms]
+
+7-DAY PLAN
+[Day 1 through Day 7 with one concrete post idea per day]
+
+NEXT ACTION
+[The single most useful action the creator should take next]
+
+Use concise, creator-friendly language. Do not explain your reasoning.`;
+
+      return await callNara({
+        apiKey,
+        system: "You are CreatorHub Studio. Produce specific, practical content campaigns from short creator briefs.",
+        user: campaignPrompt,
+        maxTokens: 5000,
+      });
+    }
 
     const {
       subject,
@@ -26,10 +93,7 @@ export async function POST(request: Request) {
     } = body;
 
     if (!subject || !action) {
-      return Response.json(
-        { error: "Subject and action are required." },
-        { status: 400 }
-      );
+      return Response.json({ error: "Subject and action are required." }, { status: 400 });
     }
 
     const userInput = `
@@ -69,193 +133,119 @@ ADDITIONAL:
 ${additional || "No extra constraints. Use professional creative judgment."}
 `;
 
-    const systemPrompt = `
-You are CreatorHub's professional AI Video Prompt Engineer.
+    const systemPrompt = `You are CreatorHub's professional AI Video Prompt Engineer.
 
-Transform the user's simple inputs into a detailed, production-ready
-prompt for modern AI video generators.
+Transform the user's simple inputs into a detailed, production-ready prompt for modern AI video generators.
 
-The user may provide only a few words. Expand them intelligently.
-Do not merely repeat the input.
-
-QUALITY RULES:
-
+Rules:
 - Never write "Not specified", "Not provided", "N/A", or similar placeholders.
-- Never leave a requested section empty.
 - Infer sensible details from the subject, environment and action.
-- Do not invent irrelevant objects, people or events.
-- Respect the user's duration and aspect ratio.
+- Respect duration and aspect ratio.
 - Keep the main subject consistent throughout the shot.
 - Describe realistic physics and continuous motion.
-- Make the result directly copyable into an AI video generator.
-- Do not explain your reasoning.
-- Do not use a table.
+- Do not explain your reasoning or use tables.
 
-CAMERA:
-Turn camera inputs into a complete cinematic setup.
-Specify shot type, camera position, angle, movement, framing, subject
-tracking, lens/focal length when useful, depth of field and focus behavior.
-If the user gives only "tracking shot", expand it into a specific tracking
-shot instead of repeating those two words.
+Expand camera into shot type, position, angle, movement, framing, tracking, lens/focal length when useful, depth of field and focus.
+Expand lighting into practical sources, key/fill/rim light when relevant, reflections, shadows, contrast and exposure.
+Build believable foreground, middle-ground and background depth.
+Describe the action from start to finish within the duration.
+Always create appropriate audio.
 
-LIGHTING:
-Turn simple lighting inputs into a complete lighting design including
-practical sources, key/fill/rim light when relevant, reflections, shadows,
-contrast and exposure.
+For automotive scenes use premium commercial cinematography and realistic vehicle physics.
+For people maintain natural movement, anatomy and identity.
+For products use controlled commercial lighting and material detail.
+For food use macro texture and realistic cooking/serving ambience.
+For landscapes use atmospheric depth and natural movement.
+For characters maintain consistent appearance.
 
-ENVIRONMENT:
-Build believable foreground, middle-ground and background depth using only
-details that naturally belong to the location.
-
-ACTION:
-Describe how the action starts, develops and ends within the requested
-duration, including realistic movement and interaction with the environment.
-
-MOTION & ATMOSPHERE:
-Include appropriate environmental movement, camera motion, reflections,
-particles, weather, clothing/hair movement, vehicle motion or other
-physically relevant details. Do not add details that do not fit the scene.
-
-AUDIO:
-Always create appropriate audio even when the user leaves the field blank.
-For vehicles, consider engine, tire, road and traffic sounds.
-For people, consider footsteps, clothing and environmental ambience.
-For food, consider cooking and kitchen ambience.
-For nature, consider wind, water, birds and environmental ambience.
-For products, use subtle premium commercial sound design.
-Never say audio is unspecified.
-
-SUBJECT-SPECIFIC CINEMATOGRAPHY:
-
-SPORTS CAR / AUTOMOTIVE:
-Use premium automotive-commercial cinematography. Consider low-angle
-tracking, front three-quarter framing, realistic wheel rotation,
-tire-road interaction, acceleration, suspension movement, reflections,
-bodywork highlights, road spray when appropriate, engine sound and traffic.
-
-PERSON:
-Use natural body movement, realistic facial expression, clothing and hair
-physics, consistent anatomy and identity.
-
-PRODUCT:
-Use premium commercial presentation, material details, controlled lighting,
-reflections and smooth product-focused camera movement.
-
-FOOD:
-Use appetizing macro cinematography, realistic texture, steam and
-appropriate cooking or serving sounds.
-
-LANDSCAPE:
-Use atmospheric depth, natural environmental movement, weather,
-vegetation, water and natural light.
-
-CHARACTER:
-Maintain consistent face, body proportions, clothing, hairstyle and
-accessories throughout the video.
-
-MASTER PROMPT:
-Write one polished paragraph that combines the subject, environment,
-action, camera, lighting, visual style, motion, atmosphere, audio and
-technical quality.
-
-OUTPUT EXACTLY IN THIS STRUCTURE:
-
+OUTPUT EXACTLY:
 MASTER PROMPT
-
 [Detailed production-ready prompt]
 
 ENVIRONMENT
-
 [Detailed environment]
 
 ACTION
-
 [Detailed physical action]
 
 CAMERA
-
 [Detailed cinematic camera setup]
 
 LIGHTING
-
 [Detailed lighting setup]
 
 VISUAL STYLE
-
 [Detailed visual style]
 
 MOTION & ATMOSPHERE
-
 [Detailed motion and atmosphere]
 
 AUDIO
-
 [Detailed audio]
 
 TECHNICAL DETAILS
-
 [Detailed technical requirements]
 
 ADDITIONAL
-
 [Relevant additional instructions]
 
-Every section must contain specific, useful information.
-`;
+Every section must contain specific, useful information.`;
 
-    const response = await fetch(
-      "https://router.bynara.id/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "auto/bynara",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userInput },
-          ],
-          temperature: 0.85,
-          max_tokens: 4000,
-        }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("NaraRouter API error:", data);
-      return Response.json(
-        {
-          error:
-            data?.error?.message ||
-            "NaraRouter API request failed.",
-        },
-        { status: response.status }
-      );
-    }
-
-    const generatedText =
-      data?.choices?.[0]?.message?.content || "";
-
-    if (!generatedText) {
-      return Response.json(
-        { error: "AI returned an empty response." },
-        { status: 500 }
-      );
-    }
-
-    return Response.json({
-      success: true,
-      prompt: generatedText,
+    return await callNara({
+      apiKey,
+      system: systemPrompt,
+      user: userInput,
+      maxTokens: 4000,
     });
   } catch (error) {
     console.error("Generation error:", error);
+    return Response.json({ error: "Something went wrong while generating content." }, { status: 500 });
+  }
+}
+
+async function callNara({
+  apiKey,
+  system,
+  user,
+  maxTokens,
+}: {
+  apiKey: string;
+  system: string;
+  user: string;
+  maxTokens: number;
+}) {
+  const response = await fetch("https://router.bynara.id/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "auto/bynara",
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      temperature: 0.85,
+      max_tokens: maxTokens,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error("NaraRouter API error:", data);
     return Response.json(
-      { error: "Something went wrong while generating the prompt." },
-      { status: 500 }
+      { error: data?.error?.message || "NaraRouter API request failed." },
+      { status: response.status }
     );
   }
+
+  const generatedText = data?.choices?.[0]?.message?.content || "";
+
+  if (!generatedText) {
+    return Response.json({ error: "AI returned an empty response." }, { status: 500 });
+  }
+
+  return Response.json({ success: true, prompt: generatedText });
 }

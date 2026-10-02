@@ -13,15 +13,38 @@ export function ProjectWorkspace(){
  const [brief,setBrief]=useState("");
  const [selected,setSelected]=useState<string|null>(null);
 
- useEffect(()=>{try{setProjects(JSON.parse(localStorage.getItem(key)||"[]"))}catch{}},[]);
+ useEffect(()=>{
+   try{setProjects(JSON.parse(localStorage.getItem(key)||"[]"))}catch{}
+   const saved=localStorage.getItem("creatorhub-active-project");
+   if(saved) setSelected(saved);
+   const onSaved=()=>{try{setProjects(JSON.parse(localStorage.getItem(key)||"[]"))}catch{}};
+   window.addEventListener("creatorhub-project-saved",onSaved);
+   return ()=>window.removeEventListener("creatorhub-project-saved",onSaved);
+ },[]);
 
  function save(next:Project[]){setProjects(next);localStorage.setItem(key,JSON.stringify(next))}
+ function selectProject(id:string){
+   setSelected(id);
+   localStorage.setItem("creatorhub-active-project",id);
+   window.dispatchEvent(new CustomEvent("creatorhub-project-change",{detail:id}));
+ }
  function add(){
    if(!name.trim()) return;
    const project:Project={id:crypto.randomUUID(),name:name.trim(),brief:brief.trim(),created:new Date().toLocaleDateString(),platform:"Instagram",goal:"Grow audience",campaign:""};
-   save([project,...projects]); setSelected(project.id); setName(""); setBrief("");
+   save([project,...projects]);
+   selectProject(project.id);
+   setName(""); setBrief("");
  }
- function remove(id:string){save(projects.filter(x=>x.id!==id));if(selected===id)setSelected(null)}
+ function remove(id:string){
+   const next=projects.filter(x=>x.id!==id);
+   save(next);
+   if(selected===id){
+     const nextId=next[0]?.id||null;
+     setSelected(nextId);
+     if(nextId){localStorage.setItem("creatorhub-active-project",nextId);window.dispatchEvent(new CustomEvent("creatorhub-project-change",{detail:nextId}));}
+     else{localStorage.removeItem("creatorhub-active-project");window.dispatchEvent(new CustomEvent("creatorhub-project-change",{detail:null}));}
+   }
+ }
  const active=projects.find(x=>x.id===selected);
 
  return <div className="project-panel">
@@ -34,7 +57,7 @@ export function ProjectWorkspace(){
    <div className="project-list">
      {projects.length===0?<div className="studio-empty"><strong>No projects yet</strong><p>Create your first campaign project above.</p></div>:
        projects.map(p=><article className={selected===p.id?"project-item project-item-active":"project-item"} key={p.id}>
-         <button className="project-select" onClick={()=>setSelected(p.id)}><div><strong>{p.name}</strong><small>{p.created} · {p.platform}</small><p>{p.brief||"No brief added yet."}</p></div></button>
+         <button className="project-select" onClick={()=>selectProject(p.id)}><div><strong>{p.name}</strong><small>{p.created} · {p.platform}</small><p>{p.brief||"No brief added yet."}</p></div></button>
          <button className="icon-button" onClick={()=>remove(p.id)} aria-label={`Delete ${p.name}`}><Trash2 size={16}/></button>
        </article>)}
    </div>

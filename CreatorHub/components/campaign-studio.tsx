@@ -29,12 +29,43 @@ export function CampaignStudio() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectName, setProjectName] = useState("");
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem("creatorhub-brand");
       if (raw) setBrand({ ...blankBrand, ...JSON.parse(raw) });
     } catch {}
+
+    const loadProject = (id: string | null) => {
+      if (!id) {
+        setProjectId(null);
+        setProjectName("");
+        return;
+      }
+      try {
+        const projects = JSON.parse(localStorage.getItem("creatorhub-projects") || "[]");
+        const project = projects.find((item: { id: string }) => item.id === id);
+        if (project) {
+          setProjectId(project.id);
+          setProjectName(project.name || "");
+          if (project.brief) setBrief(project.brief);
+          if (project.platform) setPlatform(project.platform);
+          if (project.goal) setGoal(project.goal);
+        }
+      } catch {}
+    };
+
+    const initial = localStorage.getItem("creatorhub-active-project");
+    if (initial) loadProject(initial);
+
+    const onProjectChange = (event: Event) => {
+      const custom = event as CustomEvent<string | null>;
+      loadProject(custom.detail || null);
+    };
+    window.addEventListener("creatorhub-project-change", onProjectChange);
+    return () => window.removeEventListener("creatorhub-project-change", onProjectChange);
   }, []);
 
   const hasBrand = Object.values(brand).some(Boolean);
@@ -64,7 +95,21 @@ export function CampaignStudio() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Campaign generation failed.");
-      setResult(data.prompt || "");
+      const generated = data.prompt || "";
+      setResult(generated);
+
+      if (projectId && generated) {
+        try {
+          const projects = JSON.parse(localStorage.getItem("creatorhub-projects") || "[]");
+          const updated = projects.map((project: { id: string; platform?: string; goal?: string; campaign?: string }) =>
+            project.id === projectId
+              ? { ...project, platform, goal, campaign: generated }
+              : project
+          );
+          localStorage.setItem("creatorhub-projects", JSON.stringify(updated));
+          window.dispatchEvent(new CustomEvent("creatorhub-project-saved", { detail: projectId }));
+        } catch {}
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Campaign generation failed.");
     } finally {
@@ -94,6 +139,7 @@ export function CampaignStudio() {
         <div className="studio-shell">
           <div className="studio-input">
             <div className="studio-label">YOUR CREATIVE BRIEF</div>
+            {projectId && <div className="studio-project-chip">Project: <strong>{projectName}</strong> · generated campaigns save here automatically</div>}
             <textarea
               value={brief}
               onChange={(e) => setBrief(e.target.value)}

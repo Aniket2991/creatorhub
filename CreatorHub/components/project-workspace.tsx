@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FolderOpen, Plus, Trash2 } from "lucide-react";
+import { Copy, FolderOpen, Plus, Trash2 } from "lucide-react";
 
 type Project = { id:string; name:string; brief:string; created:string; platform:string; goal:string; campaign:string };
 
@@ -12,6 +12,7 @@ export function ProjectWorkspace(){
  const [name,setName]=useState("");
  const [brief,setBrief]=useState("");
  const [selected,setSelected]=useState<string|null>(null);
+ const [copied,setCopied]=useState(false);
 
  useEffect(()=>{
    try{setProjects(JSON.parse(localStorage.getItem(key)||"[]"))}catch{}
@@ -34,6 +35,10 @@ export function ProjectWorkspace(){
    save([project,...projects]);
    selectProject(project.id);
    setName(""); setBrief("");
+ }
+ async function copyCampaign(campaign:string){
+   if(!campaign) return;
+   try{await navigator.clipboard.writeText(campaign);setCopied(true);window.setTimeout(()=>setCopied(false),1500)}catch{}
  }
  function remove(id:string){
    const next=projects.filter(x=>x.id!==id);
@@ -61,6 +66,6 @@ export function ProjectWorkspace(){
          <button className="icon-button" onClick={()=>remove(p.id)} aria-label={`Delete ${p.name}`}><Trash2 size={16}/></button>
        </article>)}
    </div>
-   {active && <div className="project-detail"><span className="eyebrow">ACTIVE PROJECT</span><h3>{active.name}</h3><p>{active.brief || "No brief saved for this project yet."}</p><div className="project-detail-meta"><span>{active.platform}</span><span>{active.goal}</span><span>{active.campaign ? "Campaign saved" : "Campaign not generated yet"}</span></div></div>}
+   {active && <div className="project-detail"><span className="eyebrow">ACTIVE PROJECT</span><h3>{active.name}</h3><p>{active.brief || "No brief saved for this project yet."}</p><div className="project-detail-meta"><span>{active.platform}</span><span>{active.goal}</span><span>{active.campaign ? "Campaign saved" : "Campaign not generated yet"}</span></div>{active.campaign && <div className="project-saved-campaign"><div className="project-saved-head"><strong>Saved campaign</strong><button className="icon-button" onClick={()=>copyCampaign(active.campaign)} aria-label="Copy saved campaign"><Copy size={15}/></button></div><pre>{active.campaign}</pre>{copied && <small className="studio-copied">Copied</small>}</div>}</div>}
  </div>
 }

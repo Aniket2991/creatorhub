@@ -42,6 +42,10 @@ export function CampaignStudio() {
       if (!id) {
         setProjectId(null);
         setProjectName("");
+        setBrief("");
+        setResult("");
+        setPlatform("Instagram");
+        setGoal("Grow audience");
         return;
       }
       try {
@@ -50,9 +54,10 @@ export function CampaignStudio() {
         if (project) {
           setProjectId(project.id);
           setProjectName(project.name || "");
-          if (project.brief) setBrief(project.brief);
-          if (project.platform) setPlatform(project.platform);
-          if (project.goal) setGoal(project.goal);
+          setBrief(project.brief || "");
+          setPlatform(project.platform || "Instagram");
+          setGoal(project.goal || "Grow audience");
+          setResult(project.campaign || "");
         }
       } catch {}
     };
@@ -101,9 +106,9 @@ export function CampaignStudio() {
       if (projectId && generated) {
         try {
           const projects = JSON.parse(localStorage.getItem("creatorhub-projects") || "[]");
-          const updated = projects.map((project: { id: string; platform?: string; goal?: string; campaign?: string }) =>
+          const updated = projects.map((project: { id: string; platform?: string; goal?: string; campaign?: string; brief?: string }) =>
             project.id === projectId
-              ? { ...project, platform, goal, campaign: generated }
+              ? { ...project, brief, platform, goal, campaign: generated }
               : project
           );
           localStorage.setItem("creatorhub-projects", JSON.stringify(updated));
